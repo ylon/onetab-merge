@@ -1,0 +1,87 @@
+#!/usr/bin/env node
+
+"use strict"
+var cheerio = require('cheerio');
+var fs = require('fs-extra-promise');
+var moment = require('moment');
+
+var onetab_dateformats = ['M-D-Y, h:m:s A', 'Y-M-D HH:m:s']
+
+
+merge_html_files(process.argv.slice(2))
+
+function merge_html_files(files) {
+    try {
+        var onetabs = files.map(file => load_html(file))
+            // onetabs.forEach(onetab => console.log(onetab.summary))
+        merge(onetabs)
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+function load_html(file) {
+    var html = fs.readFileSync(file)
+    var $ = cheerio.load(html)
+    var onetab = {
+        file: file,
+        windows: [],
+    }
+    $('#contentAreaDiv > div').each((idx, div) => {
+        if (div.children.length != 3) return;
+        var createdText = $(':first-child :first-child :nth-child(5) :first-child', div).text().replace('Created ', '')
+        var created = null;
+        onetab_dateformats.find(format => {
+            var m = moment(createdText, format)
+            if (!m.isValid()) return false
+            created = m.toDate()
+            return true
+        })
+        if (!created) {
+            console.error('unfound date format', createdText);
+            return;
+        }
+        var window = {
+            created: created,
+            tabs: [],
+        }
+        onetab.windows.push(window)
+        $(':nth-child(2) a', div).each((idx, a) => {
+            a = $(a)
+            window.tabs.push({
+                url: a.attr('href'),
+                title: a.text().trim(),
+            })
+        })
+    })
+    onetab.summary = {
+        file: file,
+        windows: onetab.windows.length,
+        tabs: onetab.windows.reduce((count, w) => count + w.tabs.length, 0),
+    }
+    return onetab;
+}
+
+function merge(onetabs) {
+    var map = {}
+    for (let onetab of onetabs) {
+        for (let window of onetab.windows) {
+            let id = window.created.toISOString() + ' ' + onetab.file
+            let tabs = map[id]
+            if (!tabs) {
+                tabs = []
+                map[id] = tabs
+            }
+            for (let tab of window.tabs) {
+                tabs.push(tab)
+            }
+        }
+    }
+    for (let id of Object.keys(map).sort().reverse()) {
+        console.log();
+        // console.log('\n' + id);
+        for (let tab of map[id]) {
+            console.log(tab.url + ' | ' + tab.title);
+        }
+    }
+}

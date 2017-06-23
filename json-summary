@@ -1,0 +1,14 @@
+#!/usr/bin/env node
+
+"use strict";
+
+(async(file) => {
+	try {
+		if (!file) throw new Error('Usage: file')
+		var data = await require('fs-extra-promise').readJsonAsync(file);
+		console.log('windows', data.tabGroups.length);
+		console.log('tabs', data.tabGroups.reduce((count, w) => count + w.tabsMeta.length, 0));
+	} catch (e) {
+		console.log(e);
+	}
+})(process.argv[2]);

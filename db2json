@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+# ~/".config/chromium/Default/Local Storage/chrome-extension_chphlpgkkbolifaimnlloiipkdnihall_0.localstorage"
+# ~/"Library/Application Support/Google/Chrome/Default/Local Storage/chrome-extension_chphlpgkkbolifaimnlloiipkdnihall_0.localstorage"
+
+db="$1"
+sqlite3 -noheader "$db" "select value from ItemTable where key='state'"
