@@ -11,6 +11,10 @@ Merge different sources preserving time order.
 ```sh
 ./merge-html onetab-osx-chrome.html onetab-osx-firefox.html onetab-linux-chromium.html
 ```
+or
+```sh
+./merge-html html/*
+```
 
 ## install
 ```sh
