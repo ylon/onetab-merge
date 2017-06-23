@@ -10,7 +10,6 @@ Merge different sources preserving time order.
 * Import the result into OneTab
 ```sh
 ./merge-html html/*
-OR
 ./merge-html onetab-osx-chrome.html onetab-osx-firefox.html onetab-linux-chromium.html
 ```
 
