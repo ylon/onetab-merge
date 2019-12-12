@@ -5,9 +5,8 @@ Util for [OneTab browser extension](https://www.one-tab.com).
 Merge different sources preserving time order.
 
 ## Install
-```sh
-npm install
-```
+
+in cloned folder, do `npm install`
 
 ## Usage
 
