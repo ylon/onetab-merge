@@ -1,26 +1,47 @@
 #!/usr/bin/env node
 
-"use strict"
+const usage = 'file...'
+const onetab_dateformats = ['M-D-Y, h:m:s A', 'Y-M-D HH:m:s', 'D/M/Y, HH:m:s']
+
+if (process.argv.length == 2) {
+    console.log('Usage:', usage)
+    process.exit()
+}
+
 var cheerio = require('cheerio');
 var fs = require('fs-extra-promise');
 var moment = require('moment');
 
-var onetab_dateformats = ['M-D-Y, h:m:s A', 'Y-M-D HH:m:s']
-
-
 merge_html_files(process.argv.slice(2))
 
 function merge_html_files(files) {
+    // return console.log(files);
     try {
         var onetabs = files.map(file => load_html(file))
             // onetabs.forEach(onetab => console.log(onetab.summary))
-        merge(onetabs)
-    } catch (e) {
+
+        var wins = []
+        for (let onetab of onetabs) {
+            for (let win of onetab.windows) {
+                // win.file = onetab.file
+                wins.push(win)
+            }
+        }
+        wins.sort((a, b) => a.created - b.created)
+
+        // for (let win of wins) console.log(win.created, win.file);
+        // // for (let win of wins) console.log(win);
+        // console.log(wins.length);
+
+        console.log(JSON.stringify(wins));
+    }
+    catch (e) {
         console.error(e);
     }
 }
 
 function load_html(file) {
+    // console.log('load', file);
     var html = fs.readFileSync(file)
     var $ = cheerio.load(html)
     var onetab = {
@@ -31,12 +52,15 @@ function load_html(file) {
         if (div.children.length != 3) return;
         var createdText = $(':first-child :first-child :nth-child(5) :first-child', div).text().replace('Created ', '')
         var created = null;
-        onetab_dateformats.find(format => {
+        var dtformat = onetab_dateformats.find(format => {
             var m = moment(createdText, format)
             if (!m.isValid()) return false
             created = m.toDate()
+            let y = created.getFullYear()
+            if (!(y > 2010 && y < 2020)) return false
             return true
         })
+        if (!dtformat) created = null
         if (!created) {
             console.error('unfound date format', createdText);
             return;
@@ -62,26 +86,26 @@ function load_html(file) {
     return onetab;
 }
 
-function merge(onetabs) {
-    var map = {}
-    for (let onetab of onetabs) {
-        for (let window of onetab.windows) {
-            let id = window.created.toISOString() + ' ' + onetab.file
-            let tabs = map[id]
-            if (!tabs) {
-                tabs = []
-                map[id] = tabs
-            }
-            for (let tab of window.tabs) {
-                tabs.push(tab)
-            }
-        }
-    }
-    for (let id of Object.keys(map).sort().reverse()) {
-        console.log();
-        // console.log('\n' + id);
-        for (let tab of map[id]) {
-            console.log(tab.url + ' | ' + tab.title);
-        }
-    }
-}
+// function merge(onetabs) {
+//     var map = {}
+//     for (let onetab of onetabs) {
+//         for (let window of onetab.windows) {
+//             let id = window.created.toISOString() + ' ' + onetab.file
+//             let tabs = map[id]
+//             if (!tabs) {
+//                 tabs = []
+//                 map[id] = tabs
+//             }
+//             for (let tab of window.tabs) {
+//                 tabs.push(tab)
+//             }
+//         }
+//     }
+//     for (let id of Object.keys(map).sort().reverse()) {
+//         console.log();
+//         // console.log('\n' + id);
+//         for (let tab of map[id]) {
+//             console.log(tab.url + ' | ' + tab.title);
+//         }
+//     }
+// }
